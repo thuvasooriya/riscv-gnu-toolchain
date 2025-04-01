@@ -21,7 +21,8 @@
           python313
           gawk
           gnused
-          make
+          autoconf
+          # make
           gmp
           mpfr
           libmpc
@@ -30,15 +31,21 @@
           expat
           texinfo
           flock
+          flex
           libslirp
+          bison
+          gnum4
           # dtc
           # boost
+          # gcc10
+          # clang
         ];
       in {
         legacyPackages = pkgs;
-        devShell = pkgs.mkShell {
+        devShell = pkgs.mkShell.override {stdenv = pkgs.clang16Stdenv;} {
           name = "rvgnutc";
           buildInputs = deps;
+          hardeningDisable = ["all"];
           # RISCV_TESTS_ROOT = "${pkgs.riscvTests}";
           shellHook = ''
           '';
