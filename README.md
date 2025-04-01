@@ -5,6 +5,10 @@ This is the RISC-V C and C++ cross-compiler. It supports two build modes:
 a generic ELF/Newlib toolchain and a more sophisticated Linux-ELF/glibc
 toolchain.
 
+> [!NOTE]
+> This fork focuses on providing a nix flake devshell to build riscv-gnu-toolchain on mac successfully.
+> Linux hasn't been tested, most probably should work fine.
+
 ###  Getting the sources
 
 This repository uses submodules, but submodules will fetch automatically on demand,
