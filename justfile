@@ -1,5 +1,16 @@
 # replace the prefix with your own
 
-# justfile for easier time remembering the commands
+default: clean config make_tc
+
 config:
-    ./configure --prefix=/Users/tony/riscv --enable-multilib --with-languages=c,c++,fortran
+    #!/bin/bash
+    export M4=$(which m4)
+    ./configure --prefix=/Users/tony/riscv --enable-multilib --with-cmodel=medany --with-languages=c,c++,fortran
+
+make_tc:
+    #!/bin/bash
+    export M4=$(which m4)
+    make -j$(nproc)
+
+clean:
+    make clean
