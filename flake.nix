@@ -3,26 +3,47 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
   };
 
   outputs = {
     self,
     nixpkgs,
-    flake-utils,
-  } @ inputs:
-    flake-utils.lib.eachDefaultSystem
-    (
-      system: let
-        pkgs = import nixpkgs {
-          inherit system;
-        };
-        deps = with pkgs; [
+  }: let
+    supportedSystems = [
+      "x86_64-linux"
+      "aarch64-linux"
+      "x86_64-darwin"
+      "aarch64-darwin"
+    ];
+
+    # Function to generate attributes for all systems
+    forAllSystems = fn:
+      nixpkgs.lib.genAttrs supportedSystems (
+        system:
+          fn {
+            inherit system;
+            pkgs = import nixpkgs {inherit system;};
+          }
+      );
+
+    # Determine if a system is Linux-based
+    isLinux = system: nixpkgs.lib.hasPrefix "linux" (nixpkgs.lib.last (nixpkgs.lib.splitString "-" system));
+
+    # Determine if a system is Darwin-based
+    isDarwin = system: nixpkgs.lib.hasPrefix "darwin" (nixpkgs.lib.last (nixpkgs.lib.splitString "-" system));
+  in {
+    # Define development shells for each system
+    devShells = forAllSystems (
+      {
+        system,
+        pkgs,
+      }: let
+        # Common dependencies for all platforms
+        commonDeps = with pkgs; [
           python313
           gawk
           gnused
           autoconf
-          # make
           gmp
           mpfr
           libmpc
@@ -30,29 +51,48 @@
           zlib
           expat
           texinfo
-          flock
           flex
-          libslirp
           bison
           gnum4
-          # dtc
-          # boost
-          # gcc10
-          # clang
+          flock
+          libslirp
         ];
+
+        # linux-specific dependencies
+        linuxDeps = with pkgs; [
+        ];
+
+        # system-specific dependencies
+        systemDeps =
+          commonDeps
+          ++ (
+            if isLinux system
+            then linuxDeps
+            else [
+              # darwin specific dependencies
+            ]
+          );
+
+        # system-specific stdenv
+        systemStdenv =
+          if isLinux system
+          then pkgs.clang16Stdenv
+          # else pkgs.stdenv;
+          else pkgs.clang16Stdenv;
       in {
-        legacyPackages = pkgs;
-        devShell = pkgs.mkShell.override {stdenv = pkgs.clang16Stdenv;} {
-          name = "rvgnutc";
-          buildInputs = deps;
-          hardeningDisable = ["all"];
-          # RISCV_TESTS_ROOT = "${pkgs.riscvTests}";
-          shellHook = ''
-          '';
-        };
+        default =
+          pkgs.mkShell.override {
+            stdenv = systemStdenv;
+          } {
+            name = "rvgnutc";
+            buildInputs = systemDeps;
+            # turn off warning to compile tc successfully cause it's a c project
+            hardeningDisable = ["all"];
+            shellHook = ''
+              echo "activating rvgnu development environment for ${system}"
+            '';
+          };
       }
-    )
-    // {
-      inherit inputs;
-    };
+    );
+  };
 }
